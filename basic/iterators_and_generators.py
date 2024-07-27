@@ -70,3 +70,15 @@ print([x**2 for x in range(10)])
 print([{x: y} for x in [1, 4, 6] for y in [7, 4, 3]])
 print(tuple((x, x**2) for x in range(10)))
 '''生成器'''
+name = ["WKX", "SXM", "ZP"]
+age = [31, 18, 51]
+param = []
+param.append(name)
+param.append(age)
+print(list(zip(*param)))
+
+print([(x, y) for x, y in zip(*param)])
+
+
+for x in range(1, 11):
+    print('{0:2d} {1:3d} {2:4d}'.format(x, x*x, x*x*x))

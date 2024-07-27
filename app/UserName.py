@@ -1,21 +1,36 @@
 import json
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, redirect, url_for, session
 
 app = Flask(__name__)
 
+app.secret_key = b'u7j*76783NF'
+
 
 @app.route('/', methods=['POST', 'GET'])
-def hello_world():  # put application's code here
-    return 'Hello World!'
+def index():  # put application's code here
+    if 'username' in session:
+        return f'Logged in as {session["username"]}'
+    return 'You are not logged in'
 
 
-@app.get('/login')
+@app.route('/login', methods=['POST'])
 def login():
-    return "login success!"
+    if request.method == 'POST':
+        app.logger.info('-----------')
+        data = request.get_json()
+        data['businessOrderNo'] = 'OR2024729471057103000'
+    return jsonify(data)
 
 
 name = ['bryant', 'jeremy']
 age = [39, 45]
+
+
+@app.route('/logout')
+def logout():
+    # remove the username from the session if it's there
+    session.pop('username', None)
+    return redirect(url_for('index'))
 
 
 def login_post(post_name):
@@ -51,4 +66,4 @@ def login_assert(username, password):
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(port=8080)
