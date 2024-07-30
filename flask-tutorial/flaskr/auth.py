@@ -1,5 +1,7 @@
 import functools
 
+import app
+from BaseEnum import UserStatus, ErrorMessage as errormessage
 from flask import (
     Blueprint, flash, g, redirect, render_template, request, session, url_for
 )
@@ -28,10 +30,10 @@ def register():
                 )
                 db.commit()
             except db.IntegrityError:
-                error = f"User {username} is already registered."
+                raise error
             else:
-                return redirect(url_for("auth.login"))
-        flash(error)
+                return {"success": True, "data": None}
+        flash(errormessage.USER00001)
 
     return render_template('auth/register.html')
 
@@ -55,7 +57,7 @@ def login():
         if error is None:
             session.clear()
             session['user_id'] = user['id']
-            return redirect(url_for('index'))
+            return redirect(url_for('login_success'))
 
         flash(error)
 
@@ -77,13 +79,49 @@ def load_logged_in_user():
 @auth_blue.route('/logout')
 def logout():
     session.clear()
-    return redirect(url_for('index'))
+    return redirect(url_for('login_out'))
+
+
+@auth_blue.route('/reset_password', methods=('GET', 'POST'))
+def reset_password():
+    # user_id = session.get('user_id')
+    if request.method == 'POST':
+        new_password = request.form['new_password']
+        old_password = request.form['old_password']
+        db = get_db()
+        username = request.form['username']
+        error = None
+        if not new_password:
+            error = 'new_password is required.'
+        elif not old_password:
+            error = 'old_password is required.'
+        elif not username:
+            error = 'username is required.'
+
+        # user = db.execute(
+        #     'select * from user where id = ?', (user_id,)
+        # ).fetchone()
+
+        if not check_password_hash(g.user['password'], old_password):
+            error = 'old password is error'
+        if old_password == new_password:
+            error = "new password and old password not equal"
+        else:
+            db.execute(
+                'update user set password = ? where id = ?', (generate_password_hash(new_password), g.user_id)
+            )
+            get_db().commit()
+
+        flash(error)
+
+    return render_template('auth/reset_password.html')
 
 
 def login_required(view):
+    @functools.wraps(view)
     def wrapped_view(**kwargs):
         if g.user is None:
-            return redirect(url_for('/auth.login'))
+            return redirect(url_for('auth.login'))
         return view(**kwargs)
 
-    return wrapped_view()
+    return wrapped_view

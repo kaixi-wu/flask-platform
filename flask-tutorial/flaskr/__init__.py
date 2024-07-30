@@ -1,5 +1,5 @@
 import os
-from flask import Flask
+from flask import Flask, render_template
 
 
 def create_app(test_config=None):
@@ -21,13 +21,22 @@ def create_app(test_config=None):
 
     @app.route('/')
     def index():
-        return 'hello!!'
+        return 'hello'
+
+    @app.route('/login')
+    def login_success():
+        return 'login success!!'
+
+    @app.get('/log')
+    def login_out():
+        return 'login out!!!'
 
     from . import db
     db.init_app(app)
 
-    from . import auth
+    from . import auth, blog
     app.register_blueprint(auth.auth_blue, url_prefix='/auth')
+    app.register_blueprint(blog.blog_blue)
+    app.add_url_rule('/', endpoint='index')
 
     return app
-
