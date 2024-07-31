@@ -1,10 +1,9 @@
-from flask import (Flask, render_template, Blueprint, flash, g, redirect, url_for, request)
-from werkzeug.security import check_password_hash, generate_password_hash
+from flask import (render_template, Blueprint, flash, g, redirect, url_for, request)
 from werkzeug.exceptions import abort
-from .auth import login_required
-from .db import get_db
+from auth.views.auth import login_required
+from db import get_db
 
-blog_blue = Blueprint("blog", __name__)
+from ..buleprint import blog_blue
 
 
 @blog_blue.route('/')

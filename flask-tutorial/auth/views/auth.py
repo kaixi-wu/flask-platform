@@ -1,15 +1,17 @@
 import functools
+import logging
 
-import app
-from BaseEnum import UserStatus, ErrorMessage as errormessage
+from base_enum import UserStatus, ErrorMessage as errorMessage
 from flask import (
     Blueprint, flash, g, redirect, render_template, request, session, url_for
 )
 from werkzeug.security import check_password_hash, generate_password_hash
+from typing import Union
+from ..buleprint import auth_blue
 
-from .db import get_db
+from db import get_db
 
-auth_blue = Blueprint('auth', __name__)
+logging.basicConfig(level=logging.DEBUG)
 
 
 @auth_blue.route('/register', methods=['GET', 'POST'])
@@ -33,7 +35,7 @@ def register():
                 raise error
             else:
                 return {"success": True, "data": None}
-        flash(errormessage.USER00001)
+        flash(errorMessage.USER00001)
 
     return render_template('auth/register.html')
 
@@ -57,8 +59,8 @@ def login():
         if error is None:
             session.clear()
             session['user_id'] = user['id']
-            return redirect(url_for('login_success'))
-
+            # return redirect(url_for('login_success'))
+            return "login success"
         flash(error)
 
     return render_template('auth/login.html')
@@ -66,7 +68,9 @@ def login():
 
 @auth_blue.before_app_request
 def load_logged_in_user():
-    user_id = session.get('user_id')
+    user_id = session.get("user_id")
+    # logging.debug(request.headers)
+    # logging.debug('user_id is {}'.format(user_id))
 
     if user_id is None:
         g.user = None
@@ -74,6 +78,7 @@ def load_logged_in_user():
         g.user = get_db().execute(
             'SELECT * FROM user WHERE id = ?', (user_id,)
         ).fetchone()
+        logging.debug(g.user)
 
 
 @auth_blue.route('/logout')
@@ -97,22 +102,27 @@ def reset_password():
             error = 'old_password is required.'
         elif not username:
             error = 'username is required.'
-
+        # 从g.user对象中取值即可
         # user = db.execute(
         #     'select * from user where id = ?', (user_id,)
         # ).fetchone()
 
         if not check_password_hash(g.user['password'], old_password):
-            error = 'old password is error'
+            return 'old password is error'
         if old_password == new_password:
-            error = "new password and old password not equal"
-        else:
-            db.execute(
-                'update user set password = ? where id = ?', (generate_password_hash(new_password), g.user_id)
-            )
-            get_db().commit()
-
-        flash(error)
+            return "new password and old password is equal"
+        elif user_check(g.user["username"]):
+            try:
+                logging.debug("pass {} user: {}".format(generate_password_hash(new_password), g.user['id']))
+                logging.debug(f"update user set password = '{generate_password_hash(new_password)}' where id = {g.user['id']}")
+                db.execute(
+                    f"update user set password = '{generate_password_hash(new_password)}' where id = {g.user['id']}")
+                db().commit()
+                return "user password rest success"
+            except Exception as e:
+                db.rollback()
+                logging.debug(e)
+                return "重置密码失败！请重试！"
 
     return render_template('auth/reset_password.html')
 
@@ -125,3 +135,14 @@ def login_required(view):
         return view(**kwargs)
 
     return wrapped_view
+
+
+def user_check(username: str) -> bool:
+    db = get_db()
+    user = db.execute(
+        "select * from user where username = ? order by id desc", (username,)
+    ).fetchone()
+    if user is not None:
+        return True
+    else:
+        return False
