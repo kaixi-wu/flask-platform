@@ -9,7 +9,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from typing import Union
 from ..buleprint import auth_blue
 
-from db import get_db
+from exts import get_db
 
 logging.basicConfig(level=logging.DEBUG)
 

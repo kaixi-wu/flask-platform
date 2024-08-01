@@ -1,22 +1,18 @@
 import os
 
-from flask import Flask
+from flask import Flask, g
+from logging import log
 from flask_sqlalchemy import SQLAlchemy
-
-
-# 创建 SQLAlchemy 实例
-db = SQLAlchemy()
+from sqlalchemy import text
+import config
+from exts import db
+from flask_migrate import Migrate
 
 
 def create_app(test_config=None):
     # create app and config the app
-    app = Flask(__name__, instance_relative_config=True)
-    app.config.from_mapping(
-        SECRET_KEY='dev',
-        # DATABASE='flaskr.sqlite',
-        SQLALCHEMY_DATABASE_URI='mysql+pymysql://root:Zhangping890@127.0.0.1/blog_test',
-        SQLALCHEMY_TRACK_MODIFICATIONS=False
-    )
+    app = Flask(__name__, instance_relative_config=False)
+    app.config.from_object(config)
     if test_config is None:
         app.config.from_pyfile('config.py', silent=True)
     else:
@@ -26,18 +22,22 @@ def create_app(test_config=None):
         os.makedirs(app.instance_path)
     except OSError:
         pass
-
+    #  绑定app到数据库实例
     db.init_app(app)
 
-    # 创建所有定义的数据库表
+    migrate = Migrate(app=app, db=db)
+
+    # 测试数据库连接
     with app.app_context():
-        db.create_all()
+        with db.engine.connect() as conn:
+            rs = conn.execute(text("select now() as curl_time from dual")).fetchone()
+            print(rs)
 
     # 注册蓝图
     from auth.buleprint import auth_blue
-    from blog.buleprint import blog_blue
+    from business.buleprint import business_blue
     app.register_blueprint(auth_blue, url_prefix='/auth')
-    app.register_blueprint(blog_blue, url_prefix='/blog')
+    app.register_blueprint(business_blue, url_prefix='/blog')
     app.add_url_rule('/', endpoint='index')
 
     return app
@@ -46,3 +46,6 @@ def create_app(test_config=None):
 if __name__ == '__main__':
     app = create_app()
     app.run(debug=True, host="0.0.0.0", port=80)
+
+
+
