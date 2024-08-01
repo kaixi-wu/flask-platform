@@ -1,9 +1,11 @@
 from exts import db
 from base_model import BaseModel
 
-
+def __init__():
+    pass
 class User(BaseModel):
-    __table__ = 'user'
+    __abstract__ = False
+    __tablename__ = 'auth_user'
     __table_args__ = {"comment": "用户基本信息表"}
     username = db.Column(db.String(80), unique=True, nullable=False, comment="用户名称")
     account = db.Column(db.String(80), unique=True, nullable=False, comment="用户账号")
@@ -17,7 +19,8 @@ class User(BaseModel):
 
 
 class Role(BaseModel):
-    __table__ = 'role'
+    __abstract__ = False
+    __tablename__ = 'auth_role'
     __table_args__ = {"comment": "角色信息表"}
     role_name = db.Column(db.String(80), unique=True, nullable=False, comment="角色名称")
     parent_role_id = db.Column(db.Integer, nullable=True, comment="父级角色")
@@ -30,19 +33,29 @@ class Role(BaseModel):
 
 
 class Permissions(BaseModel):
-    __table__ = 'permissions'
+    __abstract__ = False
+    __tablename__ = 'auth_resource'
     __table_args__ = {"comment": "权限信息表"}
-    permission_name = db.Column(db.String(80), unique=True, nullable=False, comment="权限名称")
-    permission_type = db.Column(db.String(80), nullable=False, comment="权限类型")
-    permission_classify = db.Column(db.String(80), nullable=False, comment="权限分类")
-    permission_address = db.Column(db.String(200), unique=True, nullable=False, comment="权限地址")
+    resource_name = db.Column(db.String(80), unique=True, nullable=False, comment="权限名称")
+    resource_type = db.Column(db.String(80), nullable=False, comment="权限类型")
+    resource_classify = db.Column(db.String(80), nullable=False, comment="权限分类")
+    resource_address = db.Column(db.String(200), unique=True, nullable=False, comment="权限地址")
 
     def __repr__(self):
         return f'<Role: {self.role_name}>'
 
 
 class UserRole(BaseModel):
-    __table__ = 'user_role'
+    __abstract__ = False
+    __tablename__ = 'auth_user_role'
     __table_args__ = {"comment": "用户角色关联表"}
     user_id = db.Column(db.Integer, nullable=False, comment="用户id")
     role_id = db.Column(db.Integer, nullable=False, comment="角色id")
+
+
+class RolePermissions(BaseModel):
+    __abstract__ = False
+    __tablename__ = 'auth_role_res'
+    __table_args__ = {"comment": "角色权限关联表"}
+    role_id = db.Column(db.Integer, nullable=False, comment="角色id")
+    res_id = db.Column(db.Integer, nullable=False, comment="权限id")

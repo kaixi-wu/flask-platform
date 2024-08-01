@@ -3,6 +3,7 @@ from datetime import datetime
 
 
 class BaseModel(db.Model):
+    __abstract__ = True
     # 基类模型
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment="主键自增")
     delete = db.Column(db.Boolean, default=False, nullable=False, comment="是否删除")
