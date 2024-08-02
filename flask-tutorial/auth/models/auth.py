@@ -1,15 +1,14 @@
 from exts import db
 from base_model import BaseModel
 
-def __init__():
-    pass
+
 class User(BaseModel):
     __abstract__ = False
     __tablename__ = 'auth_user'
     __table_args__ = {"comment": "用户基本信息表"}
     username = db.Column(db.String(80), unique=True, nullable=False, comment="用户名称")
     account = db.Column(db.String(80), unique=True, nullable=False, comment="用户账号")
-    password = db.Column(db.String(80), nullable=False, comment="password")
+    password = db.Column(db.String(256), nullable=False, comment="password")
     phone = db.Column(db.String(80), unique=True, comment="电话")
     email = db.Column(db.String(120), unique=True, nullable=False, comment="邮箱")
     enable = db.Column(db.Boolean, default=True, comment="启用状态，1禁用，0启用")
