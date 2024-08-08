@@ -17,7 +17,8 @@ class AuthType(str, BaseEnum):
 
 class UserStatus(int, BaseEnum):
     NORMAL = 1
-    CANCEL = 0
+    CANCEL = 2
+    FROZEN = 3
 
 
 class ErrorMessage(str, BaseEnum):

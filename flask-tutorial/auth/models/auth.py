@@ -1,5 +1,9 @@
 from exts import db
 from base_model import BaseModel
+from werkzeug.security import check_password_hash, generate_password_hash
+from flask import current_app as app
+
+import jwt
 
 
 class User(BaseModel):
@@ -11,10 +15,28 @@ class User(BaseModel):
     password = db.Column(db.String(256), nullable=False, comment="password")
     phone = db.Column(db.String(80), unique=True, comment="电话")
     email = db.Column(db.String(120), unique=True, nullable=False, comment="邮箱")
-    enable = db.Column(db.Boolean, default=True, comment="启用状态，1禁用，0启用")
+    status = db.Column(db.Boolean, default=True, comment="用户状态，1正常，2注销，3冻结")
 
     def __repr__(self):
         return f'<User: {self.username}>'
+
+    def verify_password(self, password):
+        return check_password_hash(self.password, password)
+
+    def build_access_token(self):
+        user_info = self.to_dict()
+        user_info.pop("create_time")
+        user_info.pop("update_time")
+        print(user_info)
+        return jwt.encode(user_info, app.config["SECRET_KEY"])
+
+    def to_dict(self, **kwargs):
+        return super(User, self).to_dict(pop_list=["password"], filter_list=kwargs.get("filter_list", []))
+
+    @classmethod
+    def is_admin(cls):
+        """ 用户是否是admin """
+        return "admin" in cls.account
 
 
 class Role(BaseModel):
@@ -41,7 +63,7 @@ class Permissions(BaseModel):
     resource_address = db.Column(db.String(200), unique=True, nullable=False, comment="权限地址")
 
     def __repr__(self):
-        return f'<Role: {self.role_name}>'
+        return f'<Role: {self.resource_name}>'
 
 
 class UserRole(BaseModel):

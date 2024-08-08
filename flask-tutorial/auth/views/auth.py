@@ -1,9 +1,11 @@
 from base_enum import UserStatus, ErrorMessage as errorMessage
 from werkzeug.security import check_password_hash, generate_password_hash
 from ..blueprint import auth_blue
-from flask import request, jsonify, session, g
+from flask import current_app as app, request, jsonify, session, g
 from ..models.auth import User, Role
 from exts import db
+from utils.views import restful
+from ..form.auth import LoginForm, UserListForm
 
 import functools
 import logging
@@ -18,21 +20,10 @@ def login_required(view):
     return wrapped_view
 
 
-@auth_blue.before_request
-def load_logged_in_user():
-    user_id = session.get("user_id")
-    logging.debug(request.headers)
-    logging.debug('user_id is {}'.format(user_id))
-
-    if user_id is None:
-        g.user = None
-    else:
-        g.user = User.query.filter_by(id=user_id).first()
-        logging.debug(g.user)
-
-
 @auth_blue.post('/register')
 def register():
+    pass
+    """
     if request.method == 'POST':
         if request.is_json:
             data = request.get_json()
@@ -61,14 +52,20 @@ def register():
             except Exception as e:
                 return f"error: {e}"
     return error
+    """
 
 
-@auth_blue.route('/login', methods=('POST',))
-def login():
+@auth_blue.post('/login')
+def auth_login():
+    form = LoginForm()
+    user_info = form.user.to_dict(pop_list=['password'])
+    user_info["access_token"] = form.user.build_access_token()
+    return app.restful.login_success(user_info)
+"""
+    error = None
     if request.method == 'POST':
         account = request.json.get('account')
         password = request.json.get('password')
-        error = None
         user = User.query.filter_by(account=account).first()
 
         if user is None:
@@ -80,19 +77,26 @@ def login():
             session.clear()
             session['user_id'] = user.id
             # return redirect(url_for('login_success'))
-            return jsonify({'message': '登录成功'})
+            return app.restful.login_success("login success!")
     return jsonify({'error': error})
+"""
 
 
-@auth_blue.route('/logout')
-def logout():
+@auth_blue.post('/refresh_token')
+def auth_refresh_token():
+    pass
+
+
+@auth_blue.put('/logout')
+def auth_logout():
     session.clear()
     return jsonify({"success": True, "data": None})
 
 
 @login_required
-@auth_blue.post('/reset_password')
-def reset_password():
+@auth_blue.put('/reset_password')
+def auth_reset_password():
+    """ 重置密码 """
     user_id = session.get('user_id')
     if request.method == 'POST':
         new_password = request.json.get('new_password')
@@ -125,11 +129,30 @@ def reset_password():
     return jsonify({"success": False, "data": "仅支持POST请求"})
 
 
-@auth_blue.get('/user/list')
-def user_list():
-    if request.method == 'GET':
-        users = User.query.filter_by(delete=False).all()
-        return jsonify({'data': [{
-            'username': user.username,
-            'email': user.email,
-            'enable': user.enable} for user in users], 'success': True})
+@auth_blue.put("/change_password")
+def system_manage_change_password():
+    """ 修改密码 """
+    pass
+
+
+@auth_blue.get('/list')
+def auth_get_user_list():
+    """ 获取用户列表 """
+    form = UserListForm()
+    return app.restful.get_success(User.make_pagination(form))
+
+
+@auth_blue.get("/role_list")
+def auth_get_user_role_list():
+    """ 获取用户的角色 """
+    pass
+
+
+@auth_blue.put("/update")
+def auth_update_user():
+    """ 修改用户 """
+    pass
+
+
+
+
