@@ -23,8 +23,8 @@ def login_required(view):
 @auth_blue.post('/register')
 def register():
     form = RegisterForm()
-    if form:
-        return {"name": "test"}
+    User.model_create(form.model_dump())
+    return app.restful.add_success()
 
     """
     if request.method == 'POST':

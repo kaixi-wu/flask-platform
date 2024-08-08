@@ -1,8 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy, BaseQuery as _BaseQuery
 from datetime import datetime
 from flask import g
-from typing import Union
-from sqlalchemy import or_, and_
+from sqlalchemy import or_
 from werkzeug.security import generate_password_hash
 
 
@@ -94,14 +93,21 @@ class BaseModel(db.Model):
         return {key: value for key, value in data_dict.items() if key in cls.get_table_column_name_list()}
 
     @classmethod
+    def auto_commit(cls, insert_dict: dict):
+        try:
+            db.session.add(cls(**insert_dict))
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+        finally:
+            db.session.close()
+
+    @classmethod
     def model_create(cls, data_dict: dict):
         """ 创建数据 """
-        column_name_list = cls.get_table_column_name_list()
-
         insert_dict = cls.format_insert_data(data_dict)
-        print(insert_dict)
-        print(column_name_list)
-        # with db.auto_commit():
-        #     db.session.add()
+        # print(insert_dict)
+        cls.auto_commit(insert_dict)
+
 
 

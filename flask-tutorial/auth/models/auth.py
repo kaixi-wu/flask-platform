@@ -13,8 +13,8 @@ class User(BaseModel):
     username = db.Column(db.String(80), unique=True, nullable=False, comment="用户名称")
     account = db.Column(db.String(80), unique=True, nullable=False, comment="用户账号")
     password = db.Column(db.String(256), nullable=False, comment="password")
-    phone = db.Column(db.String(80), unique=True, comment="电话")
-    email = db.Column(db.String(120), unique=True, nullable=False, comment="邮箱")
+    phone = db.Column(db.String(80), comment="电话")
+    email = db.Column(db.String(120), comment="邮箱")
     status = db.Column(db.Boolean, default=True, comment="用户状态，1正常，2注销，3冻结")
 
     def __repr__(self):

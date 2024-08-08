@@ -34,7 +34,7 @@ class RegisterForm(BaseForm):
     def depends_validate(self):
         self.validate_is_true(1 < len(self.account) < 50, "账号长度为2~50位")
         self.validate_is_true(5 < len(self.password) < 50, "密码长度为6~20位")
-        self.validate_data_or_is_not_exist(User, msg="数据已存在", account=self.account, username=self.username, email=self.email)
+        self.validate_data_or_is_not_exist(User, msg="数据已存在", account=self.account, username=self.username)
 
 
 class UserListForm(PaginationForm):
