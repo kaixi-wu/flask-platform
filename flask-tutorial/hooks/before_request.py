@@ -7,6 +7,6 @@ def register_before_hooks(app) -> None:
         user_id = session.get("user_id")
 
         if user_id is None:
-            g.user = None
+            g.user_id = None
         else:
-            g.user = user_id
+            g.user_id = user_id

@@ -61,8 +61,10 @@ def register():
 @auth_blue.post('/login')
 def auth_login():
     form = LoginForm()
+    print(form.user)
     user_info = form.user.to_dict(pop_list=['password'])
     user_info["access_token"] = form.user.build_access_token()
+    session['user_id'] = user_info["id"]
     return app.restful.login_success(user_info)
 """
     error = None
