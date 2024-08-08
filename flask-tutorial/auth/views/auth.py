@@ -5,7 +5,7 @@ from flask import current_app as app, request, jsonify, session, g
 from ..models.auth import User, Role
 from exts import db
 from utils.views import restful
-from ..form.auth import LoginForm, UserListForm
+from ..form.auth import LoginForm, UserListForm, RegisterForm
 
 import functools
 import logging
@@ -22,7 +22,10 @@ def login_required(view):
 
 @auth_blue.post('/register')
 def register():
-    pass
+    form = RegisterForm()
+    if form:
+        return {"name": "test"}
+
     """
     if request.method == 'POST':
         if request.is_json:

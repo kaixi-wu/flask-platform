@@ -2,6 +2,8 @@ from flask_sqlalchemy import SQLAlchemy, BaseQuery as _BaseQuery
 from datetime import datetime
 from flask import g
 from typing import Union
+from sqlalchemy import or_, and_
+from werkzeug.security import generate_password_hash
 
 
 class BaseQuery(_BaseQuery):
@@ -35,6 +37,11 @@ class BaseModel(db.Model):
         return cls.query.filter_by(**kwargs).first()
 
     @classmethod
+    def get_data_or_list(cls, **kwargs):
+        filters = [cls.__dict__[key] == value for key, value in kwargs.items()]
+        return cls.query.filter(or_(*filters)).first()
+
+    @classmethod
     def get_table_column_name_list(cls):
         return [column.name for column in cls.__table__.columns]
 
@@ -63,4 +70,38 @@ class BaseModel(db.Model):
             "total": len(query_date),
             "data": [dict(zip(col_name_list, item)) for item in query_date]
         }
+
+    @classmethod
+    def format_insert_data(cls, data_dict):
+        if "id" in data_dict:
+            data_dict.pop("id")
+
+        if cls.__name__ == "User" and "password" in data_dict:
+            data_dict["password"] = generate_password_hash(data_dict["password"])
+
+        try:  # 执行初始化脚本、执行测试时，不在上下文中，不能使用g对象
+            if hasattr(g, 'user_id') and g.user_id:
+                current_user = g.user_id  # 真实用户
+            else:
+                from auth.model_factory import User
+                current_user = User.db.session.query(User.id).filter(User.account == "common").first()[0]
+        except Exception as error:
+            current_user = None
+        data_dict["create_user"] = data_dict["update_user"] = current_user
+        data_dict["create_time"] = data_dict["update_time"] = None
+
+        # 只保留模型中有的字段
+        return {key: value for key, value in data_dict.items() if key in cls.get_table_column_name_list()}
+
+    @classmethod
+    def model_create(cls, data_dict: dict):
+        """ 创建数据 """
+        column_name_list = cls.get_table_column_name_list()
+
+        insert_dict = cls.format_insert_data(data_dict)
+        print(insert_dict)
+        print(column_name_list)
+        # with db.auto_commit():
+        #     db.session.add()
+
 

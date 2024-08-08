@@ -1,10 +1,13 @@
-from base_form import BaseForm, required_str_field
-from config import _admin_default_password
-from base_form import BaseForm, PaginationForm
-from ..models.auth import User
 from typing import Optional
+
 from pydantic import Field, field_validator
+
 from base_enum import UserStatus
+from base_form import BaseForm, PaginationForm
+from base_form import required_str_field
+from config import _admin_default_password
+from ..models.auth import User
+from sqlalchemy import Column
 
 
 class LoginForm(BaseForm):
@@ -16,34 +19,41 @@ class LoginForm(BaseForm):
         if self.account == 'admin' and self.password == _admin_default_password:
             user = User.query.filter_by(account='admin').first()
         else:
-            user = self.validate_data_is_not_exist(f'用户名或密码错误', User, account=self.account)
+            user = self.validate_data_is_exist(User, f'用户名或密码错误', account=self.account)
             self.validate_is_true(user.status != 0, f'用户已冻结，请联系管理员')
             self.validate_is_true(user.verify_password(self.password), f'用户名或密码错误')
         setattr(self, "user", user)
 
 
 class RegisterForm(BaseForm):
-    pass
+    account: str = required_str_field(title="用户账号")
+    username: str = required_str_field(title="用户名称")
+    password: str = required_str_field(title="密码")
+    email: str = required_str_field(title="邮箱")
+
+    def depends_validate(self):
+        self.validate_is_true(1 < len(self.account) < 50, "账号长度为2~50位")
+        self.validate_is_true(5 < len(self.password) < 50, "密码长度为6~20位")
+        self.validate_data_or_is_not_exist(User, msg="数据已存在", account=self.account, username=self.username, email=self.email)
 
 
 class UserListForm(PaginationForm):
     """ 用户列表 """
     account: Optional[str] = Field(None, title="用户账号")
     username: Optional[str] = Field(None, title="用户名称")
-    detail: Optional[bool] = Field(None, title="是否获取用户详情")
     status: Optional[UserStatus] = Field(None, title="用户状态")
 
     @classmethod
     @field_validator("detail")
     def validate_detail(cls, value):
-        if value:
+        if not value:
             cls.validate_is_true(User.is_admin(), msg='非admin用户')
+            return True
+        return value
 
     def get_query_filter(self, *args, **kwargs):
         """ 查询条件 """
         filter_list = []
-        # if not User.is_admin():  # 非管理员，只能获取到当前用户有的业务线的人
-        #     pass
         if self.username:
             filter_list.append(User.username.like(f'%{self.username}%'))
         if self.account:
