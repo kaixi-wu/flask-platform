@@ -55,8 +55,8 @@ class UserListForm(PaginationForm):
     username: Optional[str] = Field(None, title="用户名称")
     status: Optional[UserStatus] = Field(None, title="用户状态")
 
-    @classmethod
     @field_validator("detail")
+    @classmethod
     def validate_detail(cls, value):
         if not value:
             cls.validate_is_true(User.is_admin(), msg='非admin用户')
@@ -69,7 +69,7 @@ class UserListForm(PaginationForm):
         if self.username:
             filter_list.append(User.username.like(f'%{self.username}%'))
         if self.account:
-            filter_list.append(User.account.like(f'{self.account}%'))
+            filter_list.append(User.account.like(f'%{self.account}%'))
         if self.status:
             filter_list.append(User.status == self.status.value)
         return filter_list
