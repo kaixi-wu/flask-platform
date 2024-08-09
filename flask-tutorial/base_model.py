@@ -3,6 +3,7 @@ from datetime import datetime
 from flask import g
 from sqlalchemy import or_
 from werkzeug.security import generate_password_hash
+from contextlib import contextmanager
 
 
 class BaseQuery(_BaseQuery):
@@ -93,7 +94,7 @@ class BaseModel(db.Model):
         return {key: value for key, value in data_dict.items() if key in cls.get_table_column_name_list()}
 
     @classmethod
-    def auto_commit(cls, insert_dict: dict):
+    def auto_add(cls, insert_dict: dict):
         try:
             db.session.add(cls(**insert_dict))
             db.session.commit()
@@ -103,11 +104,34 @@ class BaseModel(db.Model):
             db.session.close()
 
     @classmethod
+    @contextmanager
+    def auto_commit(cls):
+        try:
+            yield
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+        finally:
+            db.session.close()
+
+    def model_update(self, data_dict: dict):
+        """ 更新数据 """
+        if "id" in data_dict:
+            data_dict.pop("id")
+        if self.__class__.__name__ == "User" and "password" in data_dict:
+            data_dict["password"] = generate_password_hash(data_dict["password"])
+        try:
+            data_dict["update_user"] = g.user_id if hasattr(g, "user_id") else None
+        except:
+            pass
+        with self.auto_commit():
+            for key, value in data_dict.items():
+                if hasattr(self, key):
+                    setattr(self, key, value)
+
+    @classmethod
     def model_create(cls, data_dict: dict):
         """ 创建数据 """
         insert_dict = cls.format_insert_data(data_dict)
         # print(insert_dict)
-        cls.auto_commit(insert_dict)
-
-
-
+        cls.auto_add(insert_dict)

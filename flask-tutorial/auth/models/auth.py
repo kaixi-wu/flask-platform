@@ -1,9 +1,11 @@
-from exts import db
-from base_model import BaseModel
-from werkzeug.security import check_password_hash, generate_password_hash
-from flask import current_app as app
-
 import jwt
+import random
+import string
+
+from flask import current_app as app
+from werkzeug.security import check_password_hash
+from base_model import BaseModel
+from exts import db
 
 
 class User(BaseModel):
@@ -37,6 +39,15 @@ class User(BaseModel):
     def is_admin(cls):
         """ 用户是否是admin """
         return "admin" in cls.account
+
+    def reset_password(self):
+        """ 重置密码 """
+        new_password = ''.join(random.sample(string.ascii_letters, 4))  # 随机字母
+        new_password += ''.join(random.sample(string.punctuation, 2))  # 随机标点
+        new_password += ''.join(random.sample(string.digits, 2))  # 随机数字
+        new_password += ''.join(random.sample(string.ascii_letters, 4))  # 随机字母
+        self.model_update({"password": new_password})
+        return new_password
 
 
 class Role(BaseModel):

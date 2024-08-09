@@ -5,7 +5,7 @@ from flask import current_app as app, request, jsonify, session, g
 from ..models.auth import User, Role
 from exts import db
 from utils.views import restful
-from ..form.auth import LoginForm, UserListForm, RegisterForm
+from ..form.auth import LoginForm, UserListForm, RegisterForm, GetUserForm, ChangePasswordForm
 
 import functools
 import logging
@@ -17,16 +17,19 @@ def login_required(view):
         if g.user is None:
             return jsonify({"success": False, "data": "登录信息已失效"})
         return view(**kwargs)
+
     return wrapped_view
 
 
+@login_required
 @auth_blue.post('/register')
 def register():
     form = RegisterForm()
     User.model_create(form.model_dump())
     return app.restful.add_success()
 
-    """
+
+"""
     if request.method == 'POST':
         if request.is_json:
             data = request.get_json()
@@ -66,6 +69,8 @@ def auth_login():
     user_info["access_token"] = form.user.build_access_token()
     session['user_id'] = user_info["id"]
     return app.restful.login_success(user_info)
+
+
 """
     error = None
     if request.method == 'POST':
@@ -95,13 +100,19 @@ def auth_refresh_token():
 @auth_blue.put('/logout')
 def auth_logout():
     session.clear()
-    return jsonify({"success": True, "data": None})
+    return app.restful.logout_success()
 
 
 @login_required
 @auth_blue.put('/reset_password')
 def auth_reset_password():
     """ 重置密码 """
+    form = GetUserForm()
+    new_password = form.user.reset_password()
+    return app.restful.success(f'重置成功，新密码是: {new_password}')
+
+
+""" 
     user_id = session.get('user_id')
     if request.method == 'POST':
         new_password = request.json.get('new_password')
@@ -120,7 +131,6 @@ def auth_reset_password():
 
         if old_password == new_password:
             return jsonify({"success": False, "data": "新密码不能与旧密码相同"})
-
         try:
             user = User.query.get(user_id)
             user.password = generate_password_hash(new_password)
@@ -132,12 +142,15 @@ def auth_reset_password():
             return jsonify({"success": False, "data": "密码修改失败"})
 
     return jsonify({"success": False, "data": "仅支持POST请求"})
+"""
 
 
 @auth_blue.put("/change_password")
-def system_manage_change_password():
+def auth_change_password():
     """ 修改密码 """
-    pass
+    form = ChangePasswordForm()
+    form.user.model_update({"password": form.new_password})
+    return app.restful.success(f'密码修改成功')
 
 
 @auth_blue.get('/list')
@@ -157,7 +170,3 @@ def auth_get_user_role_list():
 def auth_update_user():
     """ 修改用户 """
     pass
-
-
-
-

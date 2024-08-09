@@ -64,6 +64,11 @@ class BaseForm(pydanticBaseModel):
             raise ValueError(msg)
 
     @classmethod
+    def validate_is_false(cls, data, msg):
+        if data:
+            raise ValueError(msg)
+
+    @classmethod
     def validate_data_length(cls, data: Any, min_length, max_length, msg=None):
         if min_length < len(data) < max_length:
             return True

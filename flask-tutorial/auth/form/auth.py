@@ -8,6 +8,7 @@ from base_form import required_str_field
 from config import _admin_default_password
 from ..models.auth import User
 from sqlalchemy import Column
+from flask import g
 
 
 class LoginForm(BaseForm):
@@ -35,6 +36,17 @@ class RegisterForm(BaseForm):
         self.validate_is_true(1 < len(self.account) < 50, "账号长度为2~50位")
         self.validate_is_true(5 < len(self.password) < 50, "密码长度为6~20位")
         self.validate_data_or_is_not_exist(User, msg="数据已存在", account=self.account, username=self.username)
+
+
+class GetUserForm(BaseForm):
+    user_id: int = Field(..., title="用户ID")
+
+    # @classmethod
+    @field_validator("user_id")
+    def validate_id(cls, value):
+        user = cls.validate_data_is_exist(User, id=value)
+        setattr(cls, "user", user)
+        return value
 
 
 class UserListForm(PaginationForm):
@@ -65,3 +77,21 @@ class UserListForm(PaginationForm):
     def depends_validate(self):
         user = User.query.filter_by().all()
         setattr(self, "user", user)
+
+
+class ChangePasswordForm(BaseForm):
+    old_password: str = required_str_field(title="旧密码")
+    new_password: str = required_str_field(title="新密码")
+    sure_password: str = required_str_field(title="确认新密码")
+
+    def depends_validate(self):
+        self.validate_is_true(self.new_password == self.sure_password, msg="新密码与确认密码不一致")
+        self.validate_is_true(self.new_password != self.old_password, msg="新旧密码不能一样")
+
+    @field_validator("old_password")
+    @classmethod
+    def validate_old_password(cls, value):
+        user = User.get_first(id=g.user_id)
+        cls.validate_is_true(user.verify_password(value), "旧密码错误")
+        setattr(cls, "user", user)
+        return value
