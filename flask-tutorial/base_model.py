@@ -61,6 +61,8 @@ class BaseModel(db.Model):
     @classmethod
     def make_pagination(cls, form, get_filed=None, order_by=None, **kwargs):
         if get_filed is None:
+            get_filed = []
+        if get_filed is None:
             get_filed = cls.__table__.columns
         if order_by is None:
             order_by = cls.id

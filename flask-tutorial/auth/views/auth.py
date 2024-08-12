@@ -2,7 +2,8 @@ from base_enum import UserStatus, ErrorMessage as errorMessage
 from werkzeug.security import check_password_hash, generate_password_hash
 from ..blueprint import auth_blue
 from flask import current_app as app, request, jsonify, session, g
-from ..models.auth import User, Role
+from ..models.auth import User
+from ..models.role import Role
 from exts import db
 from utils.views import restful
 from ..form.auth import LoginForm, UserListForm, RegisterForm, GetUserForm, ChangePasswordForm
@@ -64,7 +65,6 @@ def register():
 @auth_blue.post('/login')
 def auth_login():
     form = LoginForm()
-    print(form.user)
     user_info = form.user.to_dict(pop_list=['password'])
     user_info["access_token"] = form.user.build_access_token()
     session['user_id'] = user_info["id"]
@@ -157,7 +157,12 @@ def auth_change_password():
 def auth_get_user_list():
     """ 获取用户列表 """
     form = UserListForm()
-    return app.restful.get_success(User.make_pagination(form))
+    get_filed = None
+    if not form.detail:  # 获取用户详情列表
+        get_filed = [
+            User.id, User.username, User.account, User.status, User.create_time, User.create_user
+        ]
+    return app.restful.get_success(User.make_pagination(form, get_filed=get_filed))
 
 
 @auth_blue.get("/role_list")

@@ -29,7 +29,7 @@ class User(BaseModel):
         user_info = self.to_dict()
         user_info.pop("create_time")
         user_info.pop("update_time")
-        print(user_info)
+        # print(user_info)
         return jwt.encode(user_info, app.config["SECRET_KEY"])
 
     def to_dict(self, **kwargs):
